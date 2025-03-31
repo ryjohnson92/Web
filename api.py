@@ -1,5 +1,8 @@
-import re
-from flask_restful import Resource
+import re,uuid
+import sys, inspect
+from flask import Flask
+from functools import partial
+from flask_restful import Resource,Api
 
 class Register:
     def api_failure_wrap(func,*args,**kwargs):
@@ -26,7 +29,7 @@ class Register:
     def __get_resources__(self)->list:
         t = []
         for x in dir(self):
-            if not re.match(r'__.*__',x,flags=re.I) and x != 'resource':
+            if not re.match(r'__.*__',x,flags=re.I) and str(x).lower() != 'resource':
                 obj = getattr(self,x)
                 if isinstance(obj, type):
                     route = getattr(obj,'ROUTE') if hasattr(obj,'ROUTE') else x.replace('_','/')
@@ -36,3 +39,11 @@ class Register:
         pass
     pass
 
+def debug(host,port,flask_args:dict={"import_name":"app"},secret_key:str=str(uuid.uuid4())):
+    app = Flask(**flask_args)
+    app.config['SECRET_KEY']=secret_key
+    api = Api(app)
+    return (
+        api,
+        partial(app.run,debug=True,host=host,port=port)
+    )
