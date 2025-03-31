@@ -39,10 +39,12 @@ class Register:
         pass
     pass
 
-def debug(host,port,flask_args:dict={"import_name":"app"},secret_key:str=str(uuid.uuid4())):
+def debug(host:str,port:str,resources:list=[],flask_args:dict={"import_name":"app"},secret_key:str=str(uuid.uuid4())):
     app = Flask(**flask_args)
     app.config['SECRET_KEY']=secret_key
     api = Api(app)
+    for _ in resources:
+        with _(api): pass
     return (
         api,
         partial(app.run,debug=True,host=host,port=port)

@@ -14,10 +14,13 @@ class Example(Register):
             return 'HI'
 
 if __name__ == "__main__":
+    resources = [
+        Example
+    ]
     api,run = debug(host='0.0.0.0',port="8080",flask_args={
         "import_name":"app",
         "template_folder":'{}'.format(os.getcwd())
-    })
-    with Example(api): pass
+    },resources=resources)
+
     run()
 ```
