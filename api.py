@@ -66,7 +66,7 @@ def debug(host:str,port:str,resources:list=[],flask_args:dict={"import_name":"ap
         partial(app.run,debug=True,host=host,port=port)
     )
 
-def prod(host:str,port:str,resources:list=[],flask_args:dict={"import_name":"app"},secret_key:str=str(uuid.uuid4())):
+def prod(host:str,port:str,resources:list=[],flask_args:dict={"import_name":"app"},secret_key:str=str(uuid.uuid4()),timeout:int=60):
     app = Flask(**flask_args)
     app.config['SECRET_KEY']=secret_key
     api = Api(app)
@@ -78,5 +78,6 @@ def prod(host:str,port:str,resources:list=[],flask_args:dict={"import_name":"app
         'loglevel': 'info',
         'accesslog': '-',
         'errorlog': '-',
+        'timeout': timeout,
     }
     return (FlaskGunicornApp(app, options),FlaskGunicornApp(app, options).run)
