@@ -1,7 +1,8 @@
-import re,uuid
+import re,uuid,os
 import sys, inspect
 from flask import Flask
 from functools import partial
+from gunicorn.app.base import BaseApplication
 from flask_restful import Resource,Api
 
 class Register:
@@ -39,6 +40,21 @@ class Register:
         pass
     pass
 
+class FlaskGunicornApp(BaseApplication):
+    def __init__(self, app, options=None):
+        self.options = options or {}
+        self.application = app
+        super().__init__()
+
+    def load_config(self):
+        config = {key: value for key, value in self.options.items()
+                  if key in self.cfg.settings and value is not None}
+        for key, value in config.items():
+            self.cfg.set(key.lower(), value)
+
+    def load(self):
+        return self.application
+
 def debug(host:str,port:str,resources:list=[],flask_args:dict={"import_name":"app"},secret_key:str=str(uuid.uuid4())):
     app = Flask(**flask_args)
     app.config['SECRET_KEY']=secret_key
@@ -49,3 +65,18 @@ def debug(host:str,port:str,resources:list=[],flask_args:dict={"import_name":"ap
         api,
         partial(app.run,debug=True,host=host,port=port)
     )
+
+def prod(host:str,port:str,resources:list=[],flask_args:dict={"import_name":"app"},secret_key:str=str(uuid.uuid4())):
+    app = Flask(**flask_args)
+    app.config['SECRET_KEY']=secret_key
+    api = Api(app)
+    for _ in resources:
+        with _(api): pass
+    options = {
+        'bind': '%s:%s' % (host, port),
+        'workers': int(os.environ.get('GUNICORN_WORKER_PROCS', '4')),
+        'loglevel': 'info',
+        'accesslog': '-',
+        'errorlog': '-',
+    }
+    return (FlaskGunicornApp(app, options),FlaskGunicornApp(app, options).run)
